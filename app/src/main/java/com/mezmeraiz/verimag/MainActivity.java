@@ -1,29 +1,23 @@
 package com.mezmeraiz.verimag;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
-import android.os.AsyncTask;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.widget.Toast;
-
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
-
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements OnClickFileListener {
 
-    //ArrayList<Map> mFileList ;
     RecyclerView mRecyclerView;
     RecyclerViewAdapter mRecyclerViewAdapter;
     public static final String NAME = "NAME";
@@ -36,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements OnClickFileListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mDestinationDir = getExternalFilesDir(Environment.DIRECTORY_DCIM).getAbsolutePath();
+        mDestinationDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/Documents";
         mContext = getApplicationContext();
         mCurrentDirectory = Environment.getExternalStorageDirectory().getAbsolutePath();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -86,30 +80,26 @@ public class MainActivity extends AppCompatActivity implements OnClickFileListen
             mCurrentDirectory = file.getAbsolutePath();
             mRecyclerViewAdapter.update(createFileList());
         }else{
-            new AsyncTask<File, Void, Void>() {
-                @Override
-                protected Void doInBackground(File... params) {
-                    try {
-                        decompress(params[0]);
-                    } catch (ZipException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                }
-
-                @Override
-                protected void onPostExecute(Void aVoid) {
-                    super.onPostExecute(aVoid);
-                    Toast.makeText(mContext, "Файл распакован в " + mDestinationDir, Toast.LENGTH_LONG).show();
-                }
-            }.execute(file);
+            try {
+                decompress(file);
+            } catch (ZipException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     private void decompress(File file) throws ZipException {
+        File oldFile = new File(mDestinationDir);
+        if(oldFile.exists()){
+            for(File f : oldFile.listFiles()){
+                f.delete();
+            }
+        }
         ZipFile zipFile = new ZipFile(file);
         zipFile.setFileNameCharset("Cp866");
         zipFile.extractAll(mDestinationDir);
+        startActivity(new Intent(this, PDFActivity.class));
+        finish();
     }
 
     @Override
